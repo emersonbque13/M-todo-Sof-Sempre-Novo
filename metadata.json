@@ -1,0 +1,6 @@
+{
+  "name": "Método Sofá Sempre Novo",
+  "description": "Manual completo e interativo de higienização de estofados por Giro Clean. Aprenda técnicas profissionais para identificar tecidos, remover manchas e neutralizar odores.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
