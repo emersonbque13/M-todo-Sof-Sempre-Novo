@@ -344,7 +344,7 @@ export default function App() {
 
           <div className="border-t border-slate-100 pt-3 mt-3 flex flex-col items-center gap-1.5 text-center">
             <GiroCleanLogo variant="icon-only" size={24} className="w-6 h-6 opacity-50" />
-            <span className="text-[9px] text-slate-400 font-mono font-medium">Giro Clean Academy v1.2</span>
+            <span className="text-[9px] text-slate-400 font-mono font-medium">Método SSV v1.2</span>
           </div>
         </aside>
 
@@ -354,24 +354,69 @@ export default function App() {
             
             {/* Boas-vindas Page */}
             {currentChapter === "welcome" && (
-              <article className="space-y-6">
-                <div className="text-center border-b border-slate-100 pb-6">
-                  <div className="flex justify-center mb-6">
-                    <GiroCleanLogo variant="full" className="w-48 h-48 md:w-56 md:h-56 drop-shadow-sm" />
+              <article className="space-y-8">
+                {/* 🎨 ADAPTED PREMIUM VIRTUAL COVER (Fidelity Spiral Notebook Model) */}
+                <div className="bg-white border border-slate-200 rounded-3xl shadow-xl relative overflow-hidden text-slate-800 font-sans min-h-[560px] flex flex-col justify-between pl-10 md:pl-12 pr-6 md:pr-10 py-12 md:py-16">
+                  
+                  {/* Realistic Metal Spiral Binder along the left edge */}
+                  <div className="absolute left-1 md:left-2 top-0 bottom-0 w-7 flex flex-col justify-between py-8 z-20 pointer-events-none">
+                    {Array.from({ length: 22 }).map((_, i) => (
+                      <div key={i} className="flex items-center">
+                        {/* Ring metal loop */}
+                        <div className="w-5 md:w-6 h-2 bg-gradient-to-r from-neutral-800 via-neutral-400 to-neutral-800 rounded-full border border-neutral-950/40 shadow-[0_1px_3px_rgba(0,0,0,0.4)]"></div>
+                        {/* Punch hole */}
+                        <div className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-slate-300 ml-1 shadow-inner"></div>
+                      </div>
+                    ))}
                   </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded">
-                    Ebook Premium Interativo
-                  </span>
-                  <h1 className="font-display font-extrabold text-3xl md:text-4xl text-slate-900 tracking-tight mt-3">
-                    {bookIntro.title}
-                  </h1>
-                  <h2 className="text-sm md:text-base text-slate-500 font-medium max-w-2xl mx-auto mt-2 leading-relaxed">
-                    {bookIntro.subtitle}
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-4 font-mono">{bookIntro.author}</p>
+
+                  {/* Top-centered brand logo monogram */}
+                  <div className="flex flex-col items-center mt-4">
+                    <div className="w-20 h-20 rounded-full border border-[#1c3879] flex items-center justify-center p-1 relative shadow-sm">
+                      <div className="w-full h-full rounded-full border border-dashed border-[#1c3879]/60 flex items-center justify-center">
+                        <span className="font-serif font-bold text-3xl text-[#1c3879] tracking-tight">SSV</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Centered Spaced Elegant Typography */}
+                  <div className="text-center space-y-3 my-auto z-10">
+                    <span className="text-[11px] font-bold text-slate-500 tracking-[0.3em] block uppercase">
+                      M É T O D O
+                    </span>
+                    <h1 className="font-serif text-6xl md:text-7xl font-extrabold text-[#1c3879] tracking-widest leading-none drop-shadow-sm select-none">
+                      SOFÁ
+                    </h1>
+                    <h2 className="font-sans text-xl md:text-2xl font-extrabold text-[#1c3879] tracking-[0.25em] uppercase leading-tight">
+                      SEMPRE NOVO
+                    </h2>
+                    
+                    <div className="pt-2">
+                      <span className="font-serif italic text-xs md:text-sm text-slate-400 tracking-wider">
+                        LIMPAR   •   CONSERVAR   •   RESTAURAR
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Dual-layered smooth curve/waves at the bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 h-48 pointer-events-none overflow-hidden rounded-b-3xl z-0">
+                    <svg className="absolute bottom-0 w-full h-full" viewBox="0 0 400 150" preserveAspectRatio="none">
+                      {/* Lighter Lavender/Slate Wave (Inverted, starting low on left and rising close to letters on right) */}
+                      <path d="M 0 125 Q 130 115, 260 55 T 400 38 L 400 150 L 0 150 Z" fill="#e2e8f0" />
+                      {/* Rich Deep Navy Wave (Inverted, starting low on left and rising close to letters on right) */}
+                      <path d="M 0 138 Q 140 125, 270 65 T 400 48 L 400 150 L 0 150 Z" fill="#1c3879" />
+                    </svg>
+                  </div>
+
+                  {/* Elegant floating branding subtone */}
+                  <div className="mt-auto text-center z-10 text-[9px] text-slate-300 font-mono tracking-widest uppercase">
+                    Giro Clean Academy © 2026
+                  </div>
+
                 </div>
 
-                <div className="space-y-4 text-xs md:text-sm text-slate-600 leading-relaxed text-justify">
+                {/* 📖 Introduction Welcome Text block */}
+                <div className="space-y-4 text-xs md:text-sm text-slate-600 leading-relaxed text-justify border-t border-slate-100 pt-6">
                   <h3 className="font-display font-bold text-xl text-slate-800">{bookIntro.welcome.title}</h3>
                   {bookIntro.welcome.content.split("\n\n").map((p, idx) => (
                     <p key={idx} className="text-justify">{p}</p>
@@ -1318,9 +1363,9 @@ export default function App() {
       {/* Footer copyright */}
       <footer className="bg-slate-900 text-slate-400 text-center py-6 text-xs border-t border-slate-800 mt-auto font-sans">
         <div className="max-w-7xl mx-auto px-4 space-y-2">
-          <p className="font-semibold text-slate-300">Giro Clean Academy - Método Sofá Sempre Novo®</p>
+          <p className="font-semibold text-slate-300">Método Sofá Sempre Novo® - SSV</p>
           <p>Tenho experiência prática em química têxtil, higienização de estofados e remoção de manchas.</p>
-          <p className="text-[10px] text-slate-500 font-mono">© 2026 Giro Clean S.A. Todos os direitos reservados. Chave API integrada via AI Studio.</p>
+          <p className="text-[10px] text-slate-500 font-mono">© 2026 Método SSV. Todos os direitos reservados. Chave API integrada via AI Studio.</p>
         </div>
       </footer>
 

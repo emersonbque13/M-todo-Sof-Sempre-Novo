@@ -36,23 +36,39 @@ function drawTable(
 ): number {
   let currentY = startY;
 
+  // Set font settings for headers to measure their sizes accurately
+  doc.setFont("Helvetica", "bold");
+  doc.setFontSize(8);
+
+  // Wrap header cells to fit inside their column widths (minus 3mm padding)
+  const wrappedHeaders = headers.map((header, colIdx) => {
+    const cleanHeader = sanitizeText(header);
+    return doc.splitTextToSize(cleanHeader, colWidths[colIdx] - 3);
+  });
+
+  // Calculate header row height based on the maximum number of lines
+  const maxHeaderLineCount = Math.max(...wrappedHeaders.map(lines => lines.length));
+  const headerHeight = maxHeaderLineCount * 4 + 4; // 4mm per line + padding
+
   // Draw table header row
-  checkPageOverflow(12, currentModuleTitle);
+  checkPageOverflow(headerHeight + 4, currentModuleTitle);
   doc.setFillColor(16, 84, 227); // Deep Blue Header
-  doc.rect(startX, currentY, colWidths.reduce((a, b) => a + b, 0), 8, "F");
+  doc.rect(startX, currentY, colWidths.reduce((a, b) => a + b, 0), headerHeight, "F");
   
   doc.setFont("Helvetica", "bold");
   doc.setFontSize(8);
   doc.setTextColor(255, 255, 255);
   
   let headerX = startX;
-  headers.forEach((header, idx) => {
-    const cleanHeader = sanitizeText(header);
-    doc.text(cleanHeader, headerX + 2, currentY + 5.5);
+  wrappedHeaders.forEach((lines, idx) => {
+    lines.forEach((line: string, lineIdx: number) => {
+      // Draw header line centered vertically or spaced sequentially
+      doc.text(line, headerX + 1.5, currentY + 4 + (lineIdx * 3.6));
+    });
     headerX += colWidths[idx];
   });
   
-  currentY += 8;
+  currentY += headerHeight;
 
   // Draw body rows
   doc.setFont("Helvetica", "normal");
@@ -62,11 +78,11 @@ function drawTable(
     // Wrap each cell's text to fit inside its column width
     const wrappedCells = row.map((cell, colIdx) => {
       const cleanCell = sanitizeText(cell);
-      return doc.splitTextToSize(cleanCell, colWidths[colIdx] - 4);
+      return doc.splitTextToSize(cleanCell, colWidths[colIdx] - 3);
     });
 
     const maxLineCount = Math.max(...wrappedCells.map(cellLines => cellLines.length));
-    const rowHeight = maxLineCount * 4 + 4;
+    const rowHeight = maxLineCount * 3.6 + 4;
 
     // Check if row overflows the page limit
     if (currentY + rowHeight > 270) {
@@ -77,19 +93,21 @@ function drawTable(
 
       // Redraw Table Header on new page
       doc.setFillColor(16, 84, 227);
-      doc.rect(startX, currentY, colWidths.reduce((a, b) => a + b, 0), 8, "F");
+      doc.rect(startX, currentY, colWidths.reduce((a, b) => a + b, 0), headerHeight, "F");
       
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(8);
       doc.setTextColor(255, 255, 255);
       
       let newHeaderX = startX;
-      headers.forEach((header, idx) => {
-        doc.text(sanitizeText(header), newHeaderX + 2, currentY + 5.5);
+      wrappedHeaders.forEach((lines, idx) => {
+        lines.forEach((line: string, lineIdx: number) => {
+          doc.text(line, newHeaderX + 1.5, currentY + 4 + (lineIdx * 3.6));
+        });
         newHeaderX += colWidths[idx];
       });
       
-      currentY += 8;
+      currentY += headerHeight;
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(7.5);
     }
@@ -124,7 +142,7 @@ function drawTable(
       }
 
       cellLines.forEach((line: string, lineIdx: number) => {
-        doc.text(line, cellX + 2, currentY + 4 + (lineIdx * 4));
+        doc.text(line, cellX + 1.5, currentY + 3.5 + (lineIdx * 3.6));
       });
       cellX += colWidths[colIdx];
     });
@@ -161,7 +179,10 @@ export function generateEbookPDF() {
   const setDarkColor = () => doc.setTextColor(colorDark[0], colorDark[1], colorDark[2]);
   const setMutedColor = () => doc.setTextColor(colorMuted[0], colorMuted[1], colorMuted[2]);
 
-  // Helper to draw a running header and footer on subsequent pages
+  // Track section page numbers dynamically for Table of Contents & Bookmarks
+  const sectionPages: { [key: string]: number } = {};
+
+  // Helper to draw a running header on subsequent pages (footers are drawn during post-processing)
   const addHeaderFooter = (pageNumber: number, title?: string) => {
     doc.setPage(pageNumber);
     
@@ -169,7 +190,7 @@ export function generateEbookPDF() {
     doc.setFont("Helvetica", "bold");
     doc.setFontSize(8);
     doc.setTextColor(16, 84, 227);
-    doc.text("GIRO CLEAN", marginX, 12);
+    doc.text("METODO SSV", marginX, 12);
     
     doc.setFont("Helvetica", "normal");
     doc.setTextColor(148, 163, 184);
@@ -182,13 +203,6 @@ export function generateEbookPDF() {
     doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.2);
     doc.line(marginX, 14, pageWidth - marginX, 14);
-
-    // Footer
-    doc.setFont("Helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(148, 163, 184);
-    doc.text("Metodo Sofa Sempre Novo - Giro Clean Academy", marginX, pageHeight - 12);
-    doc.text(`Pagina ${pageNumber}`, pageWidth - marginX, pageHeight - 12, { align: "right" });
   };
 
   // Helper function to write text and automatically add a new page if it exceeds limits
@@ -201,77 +215,83 @@ export function generateEbookPDF() {
     }
   };
 
-  // 1. --- COVER PAGE ---
-  // Large decorative background circular elements (abstract water swirl)
-  doc.setDrawColor(240, 249, 255);
-  doc.setFillColor(240, 249, 255);
-  doc.circle(pageWidth / 2, 80, 55, "F");
+  // 1. --- COVER PAGE (ADAPTED TO NEW MINIMALIST MODEL) ---
+  // Background pure crisp white as shown in the model
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-  doc.setDrawColor(224, 242, 254);
-  doc.setFillColor(224, 242, 254);
-  doc.circle(pageWidth / 2, 80, 42, "F");
+  // A. STYLIZED CENTRAL BRAND LOGO (SSV Monogram in circle)
+  const centerX = pageWidth / 2; // 105mm
+  const logoY = 65; // centered in the upper third
+  const logoRadius = 16;
 
-  // Elegant swirl abstract icon representation for Giro Clean Swirl
-  doc.setFillColor(16, 84, 227); // Deep Blue
-  doc.circle(pageWidth / 2 - 8, 75, 12, "F");
-  
-  doc.setFillColor(224, 242, 254); // Crescent cut out
-  doc.circle(pageWidth / 2 - 4, 75, 10, "F");
+  // Outer thin circle for the monogram
+  doc.setDrawColor(28, 56, 121); // Navy blue accent color
+  doc.setLineWidth(0.4);
+  doc.circle(centerX, logoY, logoRadius, "S");
 
-  doc.setFillColor(44, 179, 247); // Sky Blue
-  doc.circle(pageWidth / 2 + 8, 85, 9, "F");
+  // Thin interior circle accent
+  doc.setLineWidth(0.15);
+  doc.circle(centerX, logoY, logoRadius - 1.5, "S");
 
-  doc.setFillColor(240, 249, 255); // Crescent cut out
-  doc.circle(pageWidth / 2 + 5, 85, 7, "F");
+  // Intertwined classic monogram letters "SSV" inside
+  doc.setFont("Times", "bold");
+  doc.setFontSize(23);
+  doc.setTextColor(28, 56, 121);
+  doc.text("SSV", centerX, logoY + 5.5, { align: "center" });
 
-  // Title "GIRO CLEAN" on cover
+  // B. MAIN CENTRAL TITLES
+  // "MÉTODO"
   doc.setFont("Helvetica", "bold");
-  doc.setFontSize(36);
-  doc.setTextColor(16, 84, 227);
-  doc.text("GIRO CLEAN", pageWidth / 2, 145, { align: "center" });
+  doc.setFontSize(10.5);
+  doc.setTextColor(80, 95, 125); // Slate blue
+  doc.text("M É T O D O", centerX, 106, { align: "center" });
 
+  // "SOFÁ"
+  doc.setFont("Times", "bold");
+  doc.setFontSize(44);
+  doc.setTextColor(28, 56, 121); // Beautiful Rich Deep Navy
+  doc.text("SOFÁ", centerX, 125, { align: "center" });
+
+  // "SEMPRE NOVO"
   doc.setFont("Helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(44, 179, 247);
-  doc.text("LIMPEZA E HIGIENIZACAO DE ESTOFADO", pageWidth / 2, 153, { align: "center" });
+  doc.setFontSize(16.5);
+  doc.setTextColor(28, 56, 121);
+  doc.text("SEMPRE NOVO", centerX, 137, { align: "center" });
 
-  // Line separator
-  doc.setDrawColor(16, 84, 227);
-  doc.setLineWidth(1.5);
-  doc.line(40, 160, pageWidth - 40, 160);
+  // Elegant sub-feature list "LIMPAR • CONSERVAR • RESTAURAR"
+  doc.setFont("Times", "italic");
+  doc.setFontSize(9.5);
+  doc.setTextColor(110, 125, 145);
+  doc.text("LIMPAR   •   CONSERVAR   •   RESTAURAR", centerX, 147, { align: "center" });
 
-  // Ebook main title
-  doc.setFont("Helvetica", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor(15, 23, 42);
-  const coverTitleLines = doc.splitTextToSize(sanitizeText(bookIntro.title), 140);
-  doc.text(coverTitleLines, pageWidth / 2, 175, { align: "center" });
-
-  // Subtitle
+  // Spaced metadata feature / Brand subtle badge (closer to text)
   doc.setFont("Helvetica", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(71, 85, 105);
-  const coverSubLines = doc.splitTextToSize(sanitizeText(bookIntro.subtitle), 150);
-  doc.text(coverSubLines, pageWidth / 2, 195, { align: "center" });
-
-  // Extra cover elements
-  doc.setFillColor(243, 244, 246);
-  doc.roundedRect(60, 228, 90, 8, 2, 2, "F");
-  doc.setFont("Helvetica", "bold");
   doc.setFontSize(8);
-  doc.setTextColor(79, 70, 229);
-  doc.text("METODO DE ESTOFADOS COMPLETO E PRATICO", pageWidth / 2, 233.5, { align: "center" });
+  doc.setTextColor(140, 145, 160);
+  doc.text("GIRO CLEAN ACADEMY  |  MANUAL INTERATIVO COMPLETO", centerX, 162, { align: "center" });
 
-  // Footer cover
-  doc.setFont("Helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(100, 116, 139);
-  doc.text(sanitizeText(bookIntro.author), pageWidth / 2, 260, { align: "center" });
-  doc.setFontSize(8);
-  doc.text("Giro Clean Academy (c) 2026", pageWidth / 2, 266, { align: "center" });
+  // C. DUAL-LAYERED WAVE GRAPHICS (at the bottom - adapted and inverted to match the model perfectly)
+  // Light lavender/blue wave (rising to the right)
+  doc.setFillColor(224, 230, 243); // Soft gray-blue wave
+  doc.ellipse(165, 275, 170, 110, "F");
+
+  // Deep rich navy blue wave (rising to the right)
+  doc.setFillColor(28, 56, 121); // Solid navy blue bottom wave
+  doc.ellipse(175, 285, 180, 115, "F");
+
+  // Safe fill rectangle to cover the absolute bottom corners
+  doc.setFillColor(28, 56, 121);
+  doc.rect(0, 290, pageWidth, 7, "F");
+
+  // 1.5 --- SUMÁRIO RESERVED PAGE (PAGE 2) ---
+  doc.addPage();
+  const sumarioPageNumber = 2;
+  sectionPages["sumario"] = sumarioPageNumber;
 
   // 2. --- WELCOME PAGE ---
   doc.addPage();
+  sectionPages["introducao"] = doc.getNumberOfPages();
   y = 25;
   addHeaderFooter(doc.getNumberOfPages(), "Introdução");
 
@@ -347,6 +367,7 @@ export function generateEbookPDF() {
   // 3. --- MODULES GENERATION ---
   modules.forEach((module) => {
     doc.addPage();
+    sectionPages[module.id] = doc.getNumberOfPages();
     y = 25;
     const currentModuleTitle = `${module.title}`;
     addHeaderFooter(doc.getNumberOfPages(), currentModuleTitle);
@@ -547,6 +568,7 @@ export function generateEbookPDF() {
 
   // 4. --- CONCLUSIONS ---
   doc.addPage();
+  sectionPages["conclusao"] = doc.getNumberOfPages();
   y = 25;
   addHeaderFooter(doc.getNumberOfPages(), "Conclusão");
 
@@ -597,6 +619,7 @@ export function generateEbookPDF() {
 
   // BÔNUS 1: TABELA COMPLETA DE DILUIÇÕES (Starts on dedicated page)
   doc.addPage();
+  sectionPages["bonus1"] = doc.getNumberOfPages();
   y = 25;
   addHeaderFooter(doc.getNumberOfPages(), "Bônus 1: Diluições");
 
@@ -631,6 +654,7 @@ export function generateEbookPDF() {
 
   // BÔNUS 2: CHECKLIST PROFISSIONAL DE HIGIENIZAÇÃO (Starts on dedicated page)
   doc.addPage();
+  sectionPages["bonus2"] = doc.getNumberOfPages();
   y = 25;
   addHeaderFooter(doc.getNumberOfPages(), "Bônus 2: Checklist");
 
@@ -674,6 +698,7 @@ export function generateEbookPDF() {
 
   // BÔNUS 3: TABELA PODE OU NÃO PODE (Starts on dedicated page)
   doc.addPage();
+  sectionPages["bonus3"] = doc.getNumberOfPages();
   y = 25;
   addHeaderFooter(doc.getNumberOfPages(), "Bônus 3: Pode ou Não Pode");
 
@@ -708,6 +733,7 @@ export function generateEbookPDF() {
 
   // BÔNUS 4: CALENDÁRIO ANUAL DE MANUTENÇÃO DO SOFÁ (Starts on dedicated page)
   doc.addPage();
+  sectionPages["bonus4"] = doc.getNumberOfPages();
   y = 25;
   addHeaderFooter(doc.getNumberOfPages(), "Bônus 4: Calendário Anual");
 
@@ -768,8 +794,9 @@ export function generateEbookPDF() {
 
   // BÔNUS 5: EBOOK DIGITAL EM FORMATO PDF (Starts on dedicated final page)
   doc.addPage();
+  sectionPages["bonus5"] = doc.getNumberOfPages();
   y = 25;
-  addHeaderFooter(doc.getNumberOfPages(), "Giro Clean Academy");
+  addHeaderFooter(doc.getNumberOfPages(), "Metodo Sofa Sempre Novo");
 
   doc.setFont("Helvetica", "bold");
   doc.setFontSize(16);
@@ -802,7 +829,7 @@ export function generateEbookPDF() {
   y += 15;
 
   // Beautiful centered seal
-  checkPageOverflow(50, "Giro Clean Academy");
+  checkPageOverflow(50, "Metodo Sofa Sempre Novo");
   doc.setDrawColor(241, 245, 249);
   doc.setFillColor(248, 250, 252);
   doc.roundedRect(30, y, pageWidth - 60, 42, 4, 4, "FD");
@@ -810,7 +837,7 @@ export function generateEbookPDF() {
   doc.setFont("Helvetica", "bold");
   doc.setFontSize(12);
   setPrimaryColor();
-  doc.text("GIRO CLEAN ACADEMY", pageWidth / 2, y + 10, { align: "center" });
+  doc.text("METODO SOFA SEMPRE NOVO", pageWidth / 2, y + 10, { align: "center" });
 
   doc.setFont("Helvetica", "normal");
   doc.setFontSize(9);
@@ -824,6 +851,134 @@ export function generateEbookPDF() {
     doc.text(line, pageWidth / 2, y + 19 + (idx * 5.5), { align: "center" });
   });
 
+  // --- DRAW THE TABLE OF CONTENTS ON RESERVED PAGE 2 ---
+  doc.setPage(sumarioPageNumber);
+
+  // Background
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+  // Title
+  doc.setFont("Helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(28, 56, 121); // Navy blue
+  doc.text("SUMARIO DO MANUAL EXECUTIVO", centerX, 25, { align: "center" });
+
+  doc.setFont("Helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(100, 116, 139);
+  doc.text("Clique em qualquer capitulo abaixo para navegar diretamente para a pagina correspondente.", centerX, 31, { align: "center" });
+
+  // Border frame card around sumario
+  doc.setFillColor(248, 250, 252); // Soft grey (Slate 50)
+  doc.setDrawColor(226, 232, 240); // Slate 200
+  doc.setLineWidth(0.3);
+  doc.roundedRect(marginX - 4, 38, contentWidth + 8, 236, 4, 4, "FD");
+
+  let itemY = 48;
+  const sumarioItems = [
+    { label: "Introducao: Boas-vindas ao Metodo", key: "introducao" },
+    { label: "Modulo 1: Desvendando o Tecido do seu Sofa", key: "modulo-1" },
+    { label: "Modulo 2: O Arsenal de Produtos de Supermercado", key: "modulo-2" },
+    { label: "Modulo 3: As 4 Etapas da Higienizacao Perfeita", key: "modulo-3" },
+    { label: "Modulo 4: Secagem Rapida e Prevencao de Mofo", key: "modulo-4" },
+    { label: "Modulo 5: Guia de Socorro contra Manchas", key: "modulo-5" },
+    { label: "Modulo 6: Impermeabilizacao e Protecao de Fibras", key: "modulo-6" },
+    { label: "Modulo 7: Guia de Sobrevivencia contra Xixi de Pets", key: "modulo-7" },
+    { label: "Conclusao: Sua Jornada de Especialista", key: "conclusao" },
+    { label: "Bonus 1: Tabela Completa de Diluicoes", key: "bonus1" },
+    { label: "Bonus 2: Checklist Profissional de Higienizacao", key: "bonus2" },
+    { label: "Bonus 3: Tabela Pode ou Nao Pode nos Tecidos", key: "bonus3" },
+    { label: "Bonus 4: Calendario Anual de Manutencao", key: "bonus4" },
+    { label: "Bonus 5: Certificado Oficial Metodo SSV", key: "bonus5" },
+  ];
+
+  sumarioItems.forEach((item) => {
+    const targetPage = sectionPages[item.key] || 3;
+    const pageStr = `${targetPage}`;
+
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(15, 23, 42); // Dark slate
+    doc.text(sanitizeText(item.label), marginX, itemY);
+
+    // Calculate dotted connector
+    doc.setFont("Helvetica", "normal");
+    doc.setTextColor(148, 163, 184); // Muted grey
+    const labelWidth = doc.getTextWidth(sanitizeText(item.label));
+    const pageStrWidth = doc.getTextWidth(pageStr);
+    const startDotsX = marginX + labelWidth + 3;
+    const endDotsX = pageWidth - marginX - pageStrWidth - 3;
+
+    let dots = "";
+    const dotsCount = Math.floor((endDotsX - startDotsX) / 1.5);
+    for (let i = 0; i < dotsCount; i++) dots += ".";
+    doc.text(dots, startDotsX, itemY);
+
+    // Page number text
+    doc.setFont("Helvetica", "bold");
+    doc.setTextColor(16, 84, 227); // Brand blue
+    doc.text(pageStr, pageWidth - marginX, itemY, { align: "right" });
+
+    // Link overlay
+    doc.link(marginX, itemY - 4, contentWidth, 6, { pageNumber: targetPage });
+
+    itemY += 15; // Beautiful spacing
+  });
+
+  const totalPages = doc.getNumberOfPages();
+
+  // --- DRAW UNIFORM FOOTERS ON ALL PAGES FROM PAGE 2 TO END ---
+  for (let p = 2; p <= totalPages; p++) {
+    doc.setPage(p);
+
+    // Footer rule line
+    doc.setDrawColor(241, 245, 249);
+    doc.setLineWidth(0.15);
+    doc.line(marginX, pageHeight - 16, pageWidth - marginX, pageHeight - 16);
+
+    // Left brand text
+    doc.setFont("Helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text("Metodo Sofa Sempre Novo - SSV", marginX, pageHeight - 11);
+
+    // Right page numbering (X of Y)
+    doc.text(`Pagina ${p} de ${totalPages}`, pageWidth - marginX, pageHeight - 11, { align: "right" });
+
+    // Center clickable link "« VOLTAR AO SUMÁRIO" (Only on content pages, Page 3 or later)
+    if (p >= 3) {
+      doc.setFont("Helvetica", "bold");
+      doc.setTextColor(16, 84, 227); // Brand blue
+      doc.text("<< VOLTAR AO SUMARIO", centerX, pageHeight - 11, { align: "center" });
+
+      // Clickable region
+      doc.link(centerX - 18, pageHeight - 14, 36, 5, { pageNumber: sumarioPageNumber });
+    }
+  }
+
+  // --- GENERATE PDF DOCUMENT BOOKMARKS OUTLINE TREE ---
+  try {
+    const outline = (doc as any).outline;
+    if (outline) {
+      const rootNode = outline.add(null, "Metodo Sofa Sempre Novo", { pageNumber: 1 });
+      outline.add(rootNode, "Introducao", { pageNumber: sectionPages["introducao"] });
+      
+      modules.forEach((mod, idx) => {
+        outline.add(rootNode, `Modulo ${idx + 1}: ${mod.title.replace(/^MÓDULO \d+:\s*/, "")}`, { pageNumber: sectionPages[mod.id] });
+      });
+      
+      outline.add(rootNode, "Conclusao", { pageNumber: sectionPages["conclusao"] });
+      outline.add(rootNode, "Bonus 1: Diluicoes", { pageNumber: sectionPages["bonus1"] });
+      outline.add(rootNode, "Bonus 2: Checklist", { pageNumber: sectionPages["bonus2"] });
+      outline.add(rootNode, "Bonus 3: Pode ou Nao Pode", { pageNumber: sectionPages["bonus3"] });
+      outline.add(rootNode, "Bonus 4: Calendario Anual", { pageNumber: sectionPages["bonus4"] });
+      outline.add(rootNode, "Bonus 5: Certificado", { pageNumber: sectionPages["bonus5"] });
+    }
+  } catch (err) {
+    console.error("Error creating PDF outline bookmarks:", err);
+  }
+
   // Save the generated PDF file directly to client's download folder
-  doc.save("Ebook_Giro_Clean_Metodo_Estofados.pdf");
+  doc.save("Manual_Metodo_Sofa_Sempre_Novo_SSV.pdf");
 }
